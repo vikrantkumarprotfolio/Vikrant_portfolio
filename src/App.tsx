@@ -202,7 +202,7 @@ function HomePage() {
 
       <footer className="py-12 px-6 border-t border-white/5 flex justify-center">
         <p className="text-[12px] text-[#444444] text-center tracking-[0.08em] uppercase">
-          © 2026 Vikrant. All rights reserved. Designed with precision. Built with purpose.
+          © 2026 Vikrant. All rights reserved.
         </p>
       </footer>
     </div>
