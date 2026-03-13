@@ -4,7 +4,7 @@
 
   <h1>Built with Passion</h2>
 
-  <p>This is Vikrant's Protfolio whi is a graphic designer.</p>
+  <p>This is Vikrant's Protfolio who is a graphic designer.</p>
 
   <a href="s">राम-राम</a>
 
