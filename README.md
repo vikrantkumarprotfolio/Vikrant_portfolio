@@ -1,6 +1,6 @@
 <div align="center">
 
-<img width="1200" height="475" alt="GHBanner" src="https://ibb.co/j9KC81t4" />
+<a href="https://ibb.co/j9KC81t4"><img src="https://i.ibb.co/Ngh0FHRY/Vikrant-Red-Geometry.png" alt="Vikrant-Red-Geometry" border="0"></a>
 
   <h1>Built with Passion</h2>
 
