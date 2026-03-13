@@ -176,8 +176,8 @@ function HomePage() {
                 </div>
               </div>
               <div className="flex flex-col gap-1">
-                <h3 className="text-[18px] font-bold text-white">Clinical Asset Framework</h3>
-                <p className="text-[13px] font-normal text-[#888888]">Visual Communication & Corporate Strategy</p>
+                <h3 className="text-[18px] font-bold text-white">Currently in the making</h3>
+                <p className="text-[13px] font-normal text-[#888888]"> Good things take time.</p>
               </div>
             </motion.div>
           </div>
