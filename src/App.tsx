@@ -76,7 +76,7 @@ function HomePage() {
             >
               <div className="absolute inset-0 bg-gradient-to-t from-obsidian via-transparent to-transparent z-10" />
               <img 
-                src="/src/Vikrant_Red_Geometry.png" 
+                src="/Vikrant_Red_Geometry.png" 
                 alt="Vikrant Red Geometry"
                 referrerPolicy="no-referrer"
                 className="w-full h-full object-cover rounded-2xl opacity-90 shadow-2xl"
