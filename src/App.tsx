@@ -191,7 +191,7 @@ function HomePage() {
               I am looking for a full-time role where I can do my best work and give everything to the team. If you are building something that needs sharp, disciplined design thinking — let's talk.
             </p>
             <a 
-              href="mailto:contact@vikrantkumar.com" 
+              href="mailto:vortzvikrant@gmail.com" 
               className="inline-flex items-center gap-2 text-accent-red text-[16px] font-semibold hover:underline underline-offset-8"
             >
               Get in touch <ArrowUpRight className="w-5 h-5" />
