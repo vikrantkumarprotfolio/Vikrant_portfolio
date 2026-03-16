@@ -26,16 +26,15 @@
         }
 
         /* Navigation Bar */
-        nav {
-            background: rgba(10, 10, 15, 0.8);
-            backdrop-filter: blur(12px);
-            -webkit-backdrop-filter: blur(12px);
-            border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+        nav, header {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            width: 100% !important;
+            z-index: 100 !important;
+            background: #0a0a0f !important;
+            border-bottom: 1px solid #1a1a1a;
             height: 80px;
-            position: fixed;
-            top: 0;
-            width: 100%;
-            z-index: 100;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -80,7 +79,9 @@
         }
 
         .nav-links a.back-link {
-            color: #c41a00;
+            color: #c41a00 !important;
+            font-size: 14px !important;
+            text-decoration: none !important;
             display: flex;
             align-items: center;
             gap: 4px;
@@ -88,7 +89,7 @@
 
         /* Image Container */
         .image-container {
-            padding-top: 80px;
+            padding-top: 60px;
             font-size: 0;
             line-height: 0;
             width: 100%;
@@ -137,7 +138,6 @@
     </style>
 </head>
 <body>
-
     <nav>
         <div class="nav-container">
             <div class="nav-left">
@@ -171,15 +171,15 @@
 
         <!-- Mobile Images -->
         <div class="mobile-images">
-            <img src="/public/Images/Page-M1.png" alt="Ekkospire Mobile 1">
-            <img src="/public/Images//Page-M2.png" alt="Ekkospire Mobile 2">
-            <img src="/public/Images//Page-M3.png" alt="Ekkospire Mobile 3">
-            <img src="/public/Images//Page-M4.png" alt="Ekkospire Mobile 4">
-            <img src="/public/Images//Page-M5.png" alt="Ekkospire Mobile 5">
-            <img src="/public/Images//Page-M6.png" alt="Ekkospire Mobile 6">
-            <img src="/public/Images//Page-M7.png" alt="Ekkospire Mobile 7">
-            <img src="/public/Images//Page-M8.png" alt="Ekkospire Mobile 8">
-            <img src="/public/Images//Page-M9.png" alt="Ekkospire Mobile 9">
+            <img src="/Images/Page-M1.png" alt="Ekkospire Mobile 1">
+            <img src="/Images/Page-M2.png" alt="Ekkospire Mobile 2">
+            <img src="/Images/Page-M3.png" alt="Ekkospire Mobile 3">
+            <img src="/Images/Page-M4.png" alt="Ekkospire Mobile 4">
+            <img src="/Images/Page-M5.png" alt="Ekkospire Mobile 5">
+            <img src="/Images/Page-M6.png" alt="Ekkospire Mobile 6">
+            <img src="/Images/Page-M7.png" alt="Ekkospire Mobile 7">
+            <img src="/Images/Page-M8.png" alt="Ekkospire Mobile 8">
+            <img src="/Images/Page-M9.png" alt="Ekkospire Mobile 9">
         </div>
     </div>
 
