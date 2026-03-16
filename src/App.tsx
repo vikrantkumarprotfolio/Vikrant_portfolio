@@ -3,17 +3,308 @@
  * SPDX-License-Identifier: Apache-2.0
  */
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import { motion } from "motion/react";
 import { ArrowUpRight, ArrowLeft } from "lucide-react";
 import { BrowserRouter, Routes, Route, Link, useNavigate } from "react-router-dom";
 
 const pdfFile = "/portfolio.pdf";
 
+function BackgroundCanvas() {
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    const ctx = canvas.getContext('2d');
+    if (!ctx) return;
+
+    let edges: any[] = [];
+    let chains: any[] = [];
+    let mouse = { x: -1000, y: -1000 };
+    let lastMouseMove = Date.now();
+
+    const resize = () => {
+      canvas.width = document.body.scrollWidth;
+      canvas.height = document.body.scrollHeight;
+      initEdges();
+    };
+
+    const initEdges = () => {
+      const isMobile = window.innerWidth < 768;
+      let S = isMobile ? 100 : 80;
+      
+      const area = canvas.width * canvas.height;
+      if (area > 2000000) {
+        S = isMobile ? 120 : 100;
+      }
+
+      const finalCols = Math.ceil(canvas.width / S) + 1;
+      const finalRows = Math.ceil(canvas.height / S) + 1;
+
+      const edgeMap = new Map();
+
+      const addEdge = (x1: number, y1: number, x2: number, y2: number) => {
+        const p1 = `${Math.round(x1)},${Math.round(y1)}`;
+        const p2 = `${Math.round(x2)},${Math.round(y2)}`;
+        const key = [p1, p2].sort().join('|');
+        
+        if (!edgeMap.has(key)) {
+          edgeMap.set(key, {
+            x1, y1, x2, y2,
+            p1, p2,
+            currentOpacity: 0,
+            targetOpacity: 0,
+            currentGlow: 0,
+            targetGlow: 0,
+            pulseOpacity: 0,
+            pulseGlow: 0,
+            neighbors: [] // To be populated
+          });
+        }
+      };
+
+      for (let col = 0; col < finalCols; col++) {
+        for (let row = 0; row < finalRows; row++) {
+          const baseX = col * S;
+          const baseY = row * S;
+
+          const upA = [baseX, baseY + S];
+          const upB = [baseX + S, baseY + S];
+          const upC = [baseX + S / 2, baseY];
+
+          addEdge(upA[0], upA[1], upB[0], upB[1]);
+          addEdge(upB[0], upB[1], upC[0], upC[1]);
+          addEdge(upC[0], upC[1], upA[0], upA[1]);
+
+          const downA = [baseX, baseY];
+          const downB = [baseX + S, baseY];
+          const downC = [baseX + S / 2, baseY + S];
+
+          addEdge(downA[0], downA[1], downB[0], downB[1]);
+          addEdge(downB[0], downB[1], downC[0], downC[1]);
+          addEdge(downC[0], downC[1], downA[0], downA[1]);
+        }
+      }
+
+      edges = Array.from(edgeMap.values());
+
+      // Pre-calculate connectivity for performance
+      const pointToEdges = new Map();
+      edges.forEach(edge => {
+        if (!pointToEdges.has(edge.p1)) pointToEdges.set(edge.p1, []);
+        if (!pointToEdges.has(edge.p2)) pointToEdges.set(edge.p2, []);
+        pointToEdges.get(edge.p1).push(edge);
+        pointToEdges.get(edge.p2).push(edge);
+      });
+
+      edges.forEach(edge => {
+        const connected = new Set<any>();
+        [edge.p1, edge.p2].forEach(p => {
+          pointToEdges.get(p).forEach((neighbor: any) => {
+            if (neighbor !== edge) connected.add(neighbor);
+          });
+        });
+        edge.neighbors = Array.from(connected);
+      });
+    };
+
+    const distToSegment = (px: number, py: number, x1: number, y1: number, x2: number, y2: number) => {
+      const dx = x2 - x1;
+      const dy = y2 - y1;
+      const lenSq = dx * dx + dy * dy;
+      let t = ((px - x1) * dx + (py - y1) * dy) / lenSq;
+      t = Math.max(0, Math.min(1, t));
+      const nearX = x1 + t * dx;
+      const nearY = y1 + t * dy;
+      return Math.hypot(px - nearX, py - nearY);
+    };
+
+    const startChain = () => {
+      const isMobile = window.innerWidth < 768;
+      const maxChains = isMobile ? 2 : 3;
+      if (edges.length === 0 || chains.length >= maxChains) return;
+      
+      const origin = edges[Math.floor(Math.random() * edges.length)];
+      
+      const chain = {
+        startTime: Date.now(),
+        rings: [
+          { edges: [origin], delay: 0, opacity: 0.9, glow: 24 },
+          { edges: [] as any[], delay: 60, opacity: 0.7, glow: 18 },
+          { edges: [] as any[], delay: 120, opacity: 0.5, glow: 14 },
+          { edges: [] as any[], delay: 180, opacity: 0.3, glow: 10 },
+          { edges: [] as any[], delay: 240, opacity: 0.1, glow: 5 },
+          { edges: [] as any[], delay: 300, opacity: 0.05, glow: 2 }
+        ]
+      };
+
+      const visited = new Set([origin]);
+
+      for (let i = 1; i < chain.rings.length; i++) {
+        const prevEdges = chain.rings[i - 1].edges;
+        const currentRingEdges: any[] = [];
+        
+        prevEdges.forEach((e: any) => {
+          e.neighbors.forEach((neighbor: any) => {
+            if (!visited.has(neighbor)) {
+              currentRingEdges.push(neighbor);
+              visited.add(neighbor);
+            }
+          });
+        });
+        chain.rings[i].edges = currentRingEdges;
+      }
+      chains.push(chain);
+    };
+
+    let chainTimer: any = null;
+    const scheduleChain = () => {
+      const interval = 2000 + Math.random() * 2000;
+      chainTimer = setTimeout(() => {
+        if (Date.now() - lastMouseMove > 1000) startChain();
+        scheduleChain();
+      }, interval);
+    };
+
+    const handleMouseMove = (e: MouseEvent) => {
+      mouse.x = e.pageX;
+      mouse.y = e.pageY;
+      lastMouseMove = Date.now();
+    };
+
+    const handleTouchMove = (e: TouchEvent) => {
+      if (e.touches.length > 0) {
+        mouse.x = e.touches[0].pageX;
+        mouse.y = e.touches[0].pageY;
+        lastMouseMove = Date.now();
+      }
+    };
+
+    window.addEventListener('resize', resize);
+    document.addEventListener('mousemove', handleMouseMove);
+    document.addEventListener('touchmove', handleTouchMove);
+
+    setTimeout(resize, 100);
+    scheduleChain();
+
+    const animate = () => {
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
+      const now = Date.now();
+      const isMobile = window.innerWidth < 768;
+      const glowRadius = isMobile ? 50 : 70; // Smaller radius
+
+      // Update chains
+      chains = chains.filter(chain => {
+        const elapsed = now - chain.startTime;
+        let active = false;
+        chain.rings.forEach(ring => {
+          if (elapsed >= ring.delay && elapsed < ring.delay + 600) {
+            active = true;
+            const ringElapsed = elapsed - ring.delay;
+            const fade = 1 - (ringElapsed / 600);
+            ring.edges.forEach((edge: any) => {
+              edge.pulseOpacity = Math.max(edge.pulseOpacity, ring.opacity * fade);
+              edge.pulseGlow = Math.max(edge.pulseGlow, ring.glow * fade);
+            });
+          }
+        });
+        return elapsed < 1000;
+      });
+
+      edges.forEach(edge => {
+        const dist = distToSegment(mouse.x, mouse.y, edge.x1, edge.y1, edge.x2, edge.y2);
+        
+        if (dist < glowRadius) {
+          const intensity = 1 - (dist / glowRadius);
+          edge.targetOpacity = intensity * 0.8;
+          edge.targetGlow = intensity * 18;
+        } else {
+          edge.targetOpacity = 0;
+          edge.targetGlow = 0;
+        }
+
+        const finalTargetOpacity = Math.max(edge.targetOpacity, edge.pulseOpacity);
+        const finalTargetGlow = Math.max(edge.targetGlow, edge.pulseGlow);
+
+        edge.currentOpacity += (finalTargetOpacity - edge.currentOpacity) * 0.1;
+        edge.currentGlow += (finalTargetGlow - edge.currentGlow) * 0.08;
+
+        edge.pulseOpacity = 0;
+        edge.pulseGlow = 0;
+
+        if (edge.currentOpacity > 0.01) {
+          // Optimization: Only draw glow if it's significant
+          const hasGlow = edge.currentGlow > 2;
+
+          if (hasGlow) {
+            // Outer glow pass
+            ctx.beginPath();
+            ctx.moveTo(edge.x1, edge.y1);
+            ctx.lineTo(edge.x2, edge.y2);
+            ctx.strokeStyle = `rgba(196, 26, 0, ${edge.currentOpacity * 0.3})`;
+            ctx.lineWidth = isMobile ? 2 : 3;
+            ctx.shadowColor = '#c41a00';
+            ctx.shadowBlur = edge.currentGlow * 1.2;
+            ctx.stroke();
+          }
+
+          // Inner bright core
+          ctx.beginPath();
+          ctx.moveTo(edge.x1, edge.y1);
+          ctx.lineTo(edge.x2, edge.y2);
+          ctx.strokeStyle = `rgba(255, 80, 40, ${edge.currentOpacity})`;
+          ctx.lineWidth = 1;
+          if (hasGlow) {
+            ctx.shadowColor = '#ff5028';
+            ctx.shadowBlur = edge.currentGlow * 0.8;
+          } else {
+            ctx.shadowBlur = 0;
+          }
+          ctx.stroke();
+          
+          if (hasGlow) ctx.shadowBlur = 0;
+        }
+      });
+
+      requestAnimationFrame(animate);
+    };
+
+    const animId = requestAnimationFrame(animate);
+
+    return () => {
+      window.removeEventListener('resize', resize);
+      document.removeEventListener('mousemove', handleMouseMove);
+      document.removeEventListener('touchmove', handleTouchMove);
+      cancelAnimationFrame(animId);
+      clearTimeout(chainTimer);
+    };
+  }, []);
+
+  return (
+    <canvas
+      id="bg-canvas"
+      ref={canvasRef}
+      style={{
+        position: 'absolute',
+        top: 0,
+        left: 0,
+        width: '100%',
+        height: '100%',
+        zIndex: 0,
+        pointerEvents: 'none',
+        background: 'transparent',
+      }}
+    />
+  );
+}
+
 function HomePage() {
   return (
-    <div className="min-h-screen selection:bg-accent-red/30">
-      {/* Header */}
+    <div id="page-wrapper" style={{ position: 'relative', minHeight: '100vh' }} className="bg-obsidian">
+      <BackgroundCanvas />
+      <div className="relative z-10">
+        {/* Header */}
       <header className="fixed top-0 left-0 w-full z-50 border-b border-white/5 bg-obsidian/80 backdrop-blur-md">
         <nav className="max-w-7xl mx-auto px-6 h-20 flex items-center justify-between">
           <div className="flex items-center">
@@ -98,7 +389,7 @@ function HomePage() {
         </section>
 
         {/* About Section */}
-        <section id="about" className="mb-40">
+        <section id="about" className="mb-40 scroll-mt-20">
           <div className="max-w-3xl">
             <span className="text-[11px] lg:text-[26px] font-semibold text-accent-red tracking-[0.15em] uppercase">
               ABOUT
@@ -118,7 +409,7 @@ function HomePage() {
         </section>
 
         {/* Portfolio Section */}
-        <section id="work">
+        <section id="work" className="scroll-mt-20">
           <div className="flex items-end justify-between mb-12 border-b border-white/10 pb-6">
             <h2 className="text-[11px] lg:text-[26px] font-semibold text-accent-red tracking-[0.15em] uppercase">
               SELECTED WORKS
@@ -177,14 +468,14 @@ function HomePage() {
               </div>
               <div className="flex flex-col gap-1">
                 <h3 className="text-[18px] font-bold text-white">Currently in the making</h3>
-                <p className="text-[13px] font-normal text-[#888888]"> Good things take time.</p>
+                <p className="text-[13px] font-normal text-[#888888]">Good things take time</p>
               </div>
             </motion.div>
           </div>
         </section>
 
         {/* Contact Section */}
-        <section id="contact" className="mt-40 pt-20 border-t border-white/5">
+        <section id="contact" className="mt-40 pt-20 border-t border-white/5 scroll-mt-20">
           <div className="max-w-2xl">
             <h2 className="text-[40px] font-bold text-white mb-6">Ready when you are.</h2>
             <p className="text-[16px] text-[#aaaaaa] leading-[1.7] mb-10">
@@ -205,6 +496,7 @@ function HomePage() {
           © 2026 Vikrant. All rights reserved.
         </p>
       </footer>
+      </div>
     </div>
   );
 }
